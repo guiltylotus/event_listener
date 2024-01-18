@@ -45,23 +45,40 @@ class EventListener {
                         })
                     }
 
-                    events.forEach(event => {
-                        const decoded = this.web3.eth.abi.decodeLog(
-                            TransferABI,
-                            event.data,
-                            event.topics.slice(1) // Remove the first topic (event signature)
-                        );
-                        console.log({
-                            'contractAddress': event.address,
-                            'topic': event.topics[0],
-                            'topic1': event.topics.slice(1),
-                            'eventData': event.data,
-                            'decoded': decoded,
-                        })
-                    })
+                    this.decodeTransferEvent(events);
                 }
             }
         }
+    }
+
+    async getPastEvent() {
+        let block = await this.web3.eth.getBlock('latest');
+        let number = block.number;
+        console.log('blockNumber ' + number);
+
+        let events = await this.web3.eth.getPastLogs(
+            {topics:[transferTopic], fromBlock:number, toBlock:number}
+        )
+        console.log("event count: ", events.length);
+
+        this.decodeTransferEvent(events);
+    }
+
+    decodeTransferEvent(events) {
+        events.forEach(event => {
+            const decoded = this.web3.eth.abi.decodeLog(
+                TransferABI,
+                event.data,
+                event.topics.slice(1) // Remove the first topic (event signature)
+            );
+            console.log({
+                'contractAddress': event.address,
+                'topic': event.topics[0],
+                'topic1': event.topics.slice(1),
+                'eventData': event.data,
+                'decoded': decoded,
+            })
+        })
     }
 
     subscribe(topic) {
@@ -88,4 +105,5 @@ class EventListener {
 
 let listener = new EventListener();
 let transferTopic = listener.getTopic(TransferEvent);
-listener.getAllEventsInLatestBlock(transferTopic);
+listener.getPastEvent();
+// listener.getAllEventsInLatestBlock(transferTopic);
