@@ -1,6 +1,11 @@
 const Web3 = require('web3');
 
 const TransferEvent = 'Transfer(address,address,uint256)'
+const TransferABI = [
+    { type: 'address', name: 'from', indexed: true },
+    { type: 'address', name: 'to', indexed: true },
+    { type: 'uint256', name: 'value', indexed: false }
+];
 class EventListener {
     web3;
     web3ws;
@@ -28,15 +33,31 @@ class EventListener {
         if (block.transactions != null) {
             for (let txHash of block.transactions) {
                 let receipt = await this.web3.eth.getTransactionReceipt(txHash);
-                // console.log('Transaction detail :', tx)
 
                 if (receipt && receipt.logs) {
                     let events = receipt.logs.filter(log => log.topics[0] === topic)
 
-                    console.log({
-                        "txHash": txHash,
-                        "blockNumber": receipt.blockNumber,
-                        "events": events,
+                    if (events.length > 0) {
+                        console.log({
+                            "txHash": txHash,
+                            "blockNumber": receipt.blockNumber,
+                            "events": events,
+                        })
+                    }
+
+                    events.forEach(event => {
+                        const decoded = this.web3.eth.abi.decodeLog(
+                            TransferABI,
+                            event.data,
+                            event.topics.slice(1) // Remove the first topic (event signature)
+                        );
+                        console.log({
+                            'contractAddress': event.address,
+                            'topic': event.topics[0],
+                            'topic1': event.topics.slice(1),
+                            'eventData': event.data,
+                            'decoded': decoded,
+                        })
                     })
                 }
             }
