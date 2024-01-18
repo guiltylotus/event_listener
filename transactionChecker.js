@@ -17,15 +17,28 @@ class EventListener {
         return topic
     }
 
-    async getAllTransactionInLatestBlock() {
+    // async getEventFromTransaction(txHash) {
+    //     let logs = await this.web3.eth.getPastLogs()
+    // }
+    async getAllEventsInLatestBlock(topic) {
         let block = await this.web3.eth.getBlock('latest');
         let number = block.number;
         console.log('blockNumber ' + number);
         console.log('block :', block)
         if (block.transactions != null) {
             for (let txHash of block.transactions) {
-                let tx = await this.web3.eth.getTransaction(txHash);
-                console.log('Transaction detail :', tx)
+                let receipt = await this.web3.eth.getTransactionReceipt(txHash);
+                // console.log('Transaction detail :', tx)
+
+                if (receipt && receipt.logs) {
+                    let events = receipt.logs.filter(log => log.topics[0] === topic)
+
+                    console.log({
+                        "txHash": txHash,
+                        "blockNumber": receipt.blockNumber,
+                        "events": events,
+                    })
+                }
             }
         }
     }
@@ -53,8 +66,5 @@ class EventListener {
 
 
 let listener = new EventListener();
-// txChecker.getAllTransactionInLatestBlock();
 let transferTopic = listener.getTopic(TransferEvent);
-listener.subscribe(transferTopic);
-listener.watchTransactions();
-
+listener.getAllEventsInLatestBlock(transferTopic);
