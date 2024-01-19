@@ -30,6 +30,8 @@ class EventListener {
         let number = block.number;
         console.log('blockNumber ' + number);
         console.log('block :', block)
+
+        let totalEvent = 0;
         if (block.transactions != null) {
             for (let txHash of block.transactions) {
                 let receipt = await this.web3.eth.getTransactionReceipt(txHash);
@@ -40,28 +42,30 @@ class EventListener {
                     if (events.length > 0) {
                         console.log({
                             "txHash": txHash,
-                            "blockNumber": receipt.blockNumber,
-                            "events": events,
+                            // "blockNumber": receipt.blockNumber,
+                            // "events": events,
                         })
-                    }
 
-                    this.decodeTransferEvent(events);
+                        totalEvent += events.length
+                    }
+                    // this.decodeTransferEvent(events);
                 }
             }
         }
+        console.log('totalEvent: ', totalEvent)
+
+        return number
     }
 
-    async getPastEvent() {
-        let block = await this.web3.eth.getBlock('latest');
-        let number = block.number;
+    async getPastEvent(number, topic) {
         console.log('blockNumber ' + number);
 
         let events = await this.web3.eth.getPastLogs(
-            {topics:[transferTopic], fromBlock:number, toBlock:number}
+            {topics:[topic], fromBlock:number, toBlock:number}
         )
         console.log("event count: ", events.length);
 
-        this.decodeTransferEvent(events);
+        // this.decodeTransferEvent(events);
     }
 
     decodeTransferEvent(events) {
@@ -102,8 +106,19 @@ class EventListener {
 
 }
 
+class Runner {
+   constructor() {
 
-let listener = new EventListener();
-let transferTopic = listener.getTopic(TransferEvent);
-listener.getPastEvent();
-// listener.getAllEventsInLatestBlock(transferTopic);
+   }
+
+   async run() {
+        let listener = new EventListener();
+        let transferTopic = listener.getTopic(TransferEvent);
+        let blockNumber = await listener.getAllEventsInLatestBlock(transferTopic);
+        listener.getPastEvent(blockNumber, transferTopic);
+   }
+}
+
+
+let runner = new Runner();
+runner.run();
