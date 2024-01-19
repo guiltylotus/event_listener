@@ -10,10 +10,16 @@ class EventListener {
     web3;
     web3ws;
     subscription;
+    currentBlock;
+
 
     constructor() {
         this.web3 = new Web3(new Web3.providers.HttpProvider('https://bsc.kyberengineering.io/'));
         this.web3ws = new Web3(new Web3.providers.WebsocketProvider('wss://bsc.publicnode.com'));
+        this.currentBlock = {
+            'blockNumber': null,
+            'blockHash': null,
+        }
     }
 
     getTopic(event) {
@@ -58,12 +64,16 @@ class EventListener {
     }
 
     async getPastEvent(number, topic) {
-        console.log('blockNumber ' + number);
-
         let events = await this.web3.eth.getPastLogs(
             {topics:[topic], fromBlock:number, toBlock:number}
         )
-        console.log("event count: ", events.length);
+
+        console.log({
+            "message": "get events",
+            "blockNumber": number,
+            "topic": topic,
+            "eventCount": events.length,
+        });
 
         // this.decodeTransferEvent(events);
     }
@@ -87,20 +97,60 @@ class EventListener {
 
     subscribe(topic) {
         this.subscription = this.web3ws.eth.subscribe(
-            'pendingTransactions',
+            'newBlockHeaders',
             (err, res) => {
-            if (err)
-                console.error('subscribe error :', err);
+                if (err) {
+                    console.error('subscribe error :', err);
+                }
         })
             .on("connected", function(subscriptionId){
                 console.log('subscriptionId :', subscriptionId);
             })
     }
 
-     watchTransactions() {
+     onSubscribe(topic) {
         console.log('Watching all Transfer events...');
-        this.subscription.on('data', event => {
-            console.log('events :', event);
+        this.subscription.on('data', async  event => {
+            let finalized = await this.web3.eth.getBlock('finalized');
+            let latest = await this.web3.eth.getBlock('latest');
+            console.log('-------------------------------------')
+            console.log('finalized block: ', finalized.number, finalized.hash, finalized.parentHash)
+            console.log('latest block: ', latest.number, latest.hash, latest.parentHash)
+            console.log('events :', event.number, event.hash, event.parentHash);
+
+            let start = latest.number;
+            if (this.currentBlock.blockNumber !== null) {
+                start = this.currentBlock.blockNumber + 1;
+            }
+            let end = latest.number;
+
+            // Handle re-org
+            if (this.currentBlock.blockHash !== null && latest.parentHash !== this.currentBlock.blockHash) {
+                console.log({
+                    "message": "found reorg",
+                    "from": finalized.number,
+                    "to": latest.number,
+                });
+                start = finalized.number;
+            }
+
+            console.log("start to end", start, end);
+
+            // Update event
+            for (let i = start; i <= end; i++) {
+                await this.getPastEvent(start, topic)
+            }
+
+            // Update block
+            this.currentBlock = {
+                blockNumber: latest.number,
+                blockHash: latest.hash
+            }
+            console.log({
+                "message": "saved currentBlock",
+                "blockNumber": this.currentBlock.blockNumber,
+                "blockHash": this.currentBlock.blockHash,
+            })
         })
     }
 
@@ -114,8 +164,10 @@ class Runner {
    async run() {
         let listener = new EventListener();
         let transferTopic = listener.getTopic(TransferEvent);
-        let blockNumber = await listener.getAllEventsInLatestBlock(transferTopic);
-        listener.getPastEvent(blockNumber, transferTopic);
+        // let blockNumber = await listener.getAllEventsInLatestBlock(transferTopic);
+        // listener.getPastEvent(blockNumber, transferTopic);
+       listener.subscribe(transferTopic)
+       listener.onSubscribe(transferTopic)
    }
 }
 
