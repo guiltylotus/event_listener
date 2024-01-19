@@ -64,16 +64,22 @@ class EventListener {
     }
 
     async getPastEvent(number, topic) {
+        console.log("different rpc node, wait to sync data...")
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         let events = await this.web3.eth.getPastLogs(
             {topics:[topic], fromBlock:number, toBlock:number}
         )
-
-        console.log({
-            "message": "get events",
-            "blockNumber": number,
-            "topic": topic,
-            "eventCount": events.length,
-        });
+        if (events.length === 0) {
+            await this.getPastEvent(number, topic);
+        } else {
+            console.log({
+                "message": "get events",
+                "blockNumber": number,
+                "topic": topic,
+                "eventCount": events.length,
+            });
+        }
 
         // this.decodeTransferEvent(events);
     }
@@ -86,6 +92,7 @@ class EventListener {
                 event.topics.slice(1) // Remove the first topic (event signature)
             );
             console.log({
+                'message': 'decoded event',
                 'contractAddress': event.address,
                 'topic': event.topics[0],
                 'topic1': event.topics.slice(1),
@@ -110,13 +117,11 @@ class EventListener {
 
      onSubscribe(topic) {
         console.log('Watching all Transfer events...');
-        this.subscription.on('data', async  event => {
+        this.subscription.on('data', async  latest => {
             let finalized = await this.web3.eth.getBlock('finalized');
-            let latest = await this.web3.eth.getBlock('latest');
             console.log('-------------------------------------')
             console.log('finalized block: ', finalized.number, finalized.hash, finalized.parentHash)
             console.log('latest block: ', latest.number, latest.hash, latest.parentHash)
-            console.log('events :', event.number, event.hash, event.parentHash);
 
             let start = latest.number;
             if (this.currentBlock.blockNumber !== null) {
@@ -138,7 +143,7 @@ class EventListener {
 
             // Update event
             for (let i = start; i <= end; i++) {
-                await this.getPastEvent(start, topic)
+                await this.getPastEvent(i, topic)
             }
 
             // Update block
