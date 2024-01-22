@@ -9,6 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "web3": "1.8.1"
+    "@dopex-io/web3-multicall": "^0.1.10",
+    "ethereum-multicall": "^2.21.0",
+    "web3": "1.8.1",
+    "web3-multicall3": "^0.2.1"
   }
 }
