@@ -2,3 +2,5 @@ node_modules
 *.log
 .idea/
 tokens
+.env
+.DS_Store

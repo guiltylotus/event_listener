@@ -2,16 +2,17 @@ const axios = require('axios');
 const fs = require('fs');
 const util = require('util');
 const csv = require('csv-parser');
+require('dotenv').config();
 
 // const apiUrl = 'https://api.covalenthq.com/v1/1/tokens/0xa711BCC2b6f5c4fc3DFaCcc2a01148765CBbAb1C/token_holders_v2/';
-const apiKey = 'cqt_rQc8qrQvdVdYTYVK4rrPM8FDMdPc'; // Replace with your Covalent API key
+const apiKey = process.env.API_KEY;
 
 const pageNumber = 10000; // Set the number of pages you want to fetch
 
 const readFile = util.promisify(fs.readFile);
 const tokenData = [];
-let totalAddresses = 29338096;
-let lastStartPoint = 801
+let totalAddresses = 38642419;
+let lastStartPoint = 3601
 
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -53,7 +54,7 @@ async function getTotalAddresses(start, batchSize) {
         };
 
         requests.push(axios.get(apiUrl, { params }));
-        await sleep(500);
+        await sleep(1000);
     }
 
     try {
@@ -77,7 +78,7 @@ async function getTotalAddresses(start, batchSize) {
 async function run() {
     await readCsvFile('./tokens/tokens_eth.csv');
 
-    let batchSize = 100;
+    let batchSize = 10;
     let i = lastStartPoint;
     do {
         await getTotalAddresses(i, batchSize);

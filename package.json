@@ -12,6 +12,7 @@
     "@dopex-io/web3-multicall": "^0.1.10",
     "axios": "^1.6.5",
     "csv-parser": "^3.0.0",
+    "dotenv": "^16.4.0",
     "ethereum-multicall": "^2.21.0",
     "fs": "^0.0.1-security",
     "util": "^0.12.5",
