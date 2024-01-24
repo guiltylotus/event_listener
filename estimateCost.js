@@ -11,8 +11,9 @@ const pageNumber = 10000; // Set the number of pages you want to fetch
 
 const readFile = util.promisify(fs.readFile);
 const tokenData = [];
-let totalAddresses = 38642419;
-let lastStartPoint = 3601
+const failedAddress = [];
+let totalAddresses = 39356924;
+let lastStartPoint = 4852
 
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -38,6 +39,11 @@ async function readCsvFile(filePath) {
     }
 }
 
+function isValidEthAddress(address) {
+    const addressRegex = /^(0x)?[0-9a-fA-F]{40}$/;
+    return addressRegex.test(address);
+}
+
 async function getTotalAddresses(start, batchSize) {
     const requests = [];
     let end = Math.min(start+batchSize, tokenData.length);
@@ -45,6 +51,10 @@ async function getTotalAddresses(start, batchSize) {
     console.log('-----------------------');
     console.log('start - end', start, end)
     for (let i = start; i < end; i++) {
+        if (!isValidEthAddress(tokenData[i]['address'])) {
+            console.log('skip i', i)
+            continue;
+        }
         const apiUrl = 'https://api.covalenthq.com/v1/1/tokens/' + tokenData[i]['address'] + '/token_holders_v2/';
         console.log('i :', i, tokenData[i]['symbol']);
         console.log('apiUrl :', apiUrl);
@@ -54,31 +64,52 @@ async function getTotalAddresses(start, batchSize) {
         };
 
         requests.push(axios.get(apiUrl, { params }));
-        await sleep(1000);
+        await sleep(200);
     }
 
+    let i = start;
     try {
         const responses = await Promise.all(requests);
 
-        let i = start;
         responses.forEach(response => {
-            let totalCount = response.data['data']['pagination']['total_count'];
-            totalAddresses += totalCount;
-            console.log('totalCount index i:', i, totalCount);
+            console.log('here')
+           if (response.status === 404) {
+                console.log("404 Bad request :", response.data['code'])
+                console.log({
+                    "message": "404 Bad Request",
+                    "code": response.data['code'],
+                    "i": i,
+                    "symbol": tokenData[i]['symbol']
+                })
+                failedAddress.push(tokenData[i]['address']);
+            } if (isValidEthAddress(tokenData[i]['address'])) {
+                let totalCount = response.data['data']['pagination']['total_count'];
+                totalAddresses += totalCount;
+                console.log('totalCount index i:', i, totalCount);
+                console.log('failedAddress', failedAddress)
+            } else {
+               console.log('skip i', i)
+            }
             i += 1;
         });
 
         console.log('totalAddresses:', totalAddresses);
     } catch (error) {
-        console.error('API Rate limit');
-        // console.error('API Error:', error.message);
+        console.log({
+            "code": error['code'],
+            "i": i,
+            "symbol": tokenData[i]['symbol']
+        })
+        if (isValidEthAddress(tokenData[i]['address'])) {
+            failedAddress.push(tokenData[i]['address']);
+        }
     }
 }
 
 async function run() {
     await readCsvFile('./tokens/tokens_eth.csv');
 
-    let batchSize = 10;
+    let batchSize = 1;
     let i = lastStartPoint;
     do {
         await getTotalAddresses(i, batchSize);
