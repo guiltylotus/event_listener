@@ -10,7 +10,11 @@
   "license": "ISC",
   "dependencies": {
     "@dopex-io/web3-multicall": "^0.1.10",
+    "axios": "^1.6.5",
+    "csv-parser": "^3.0.0",
     "ethereum-multicall": "^2.21.0",
+    "fs": "^0.0.1-security",
+    "util": "^0.12.5",
     "web3": "1.8.1",
     "web3-multicall3": "^0.2.1"
   }
