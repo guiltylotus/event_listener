@@ -10,7 +10,8 @@ const pageNumber = 10000; // Set the number of pages you want to fetch
 
 const readFile = util.promisify(fs.readFile);
 const tokenData = [];
-let totalAddresses = 0;
+let totalAddresses = 29338096;
+let lastStartPoint = 801
 
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -58,7 +59,7 @@ async function getTotalAddresses(start, batchSize) {
     try {
         const responses = await Promise.all(requests);
 
-        let i = 1;
+        let i = start;
         responses.forEach(response => {
             let totalCount = response.data['data']['pagination']['total_count'];
             totalAddresses += totalCount;
@@ -68,7 +69,8 @@ async function getTotalAddresses(start, batchSize) {
 
         console.log('totalAddresses:', totalAddresses);
     } catch (error) {
-        console.error('API Error:', error.message);
+        console.error('API Rate limit');
+        // console.error('API Error:', error.message);
     }
 }
 
@@ -76,7 +78,7 @@ async function run() {
     await readCsvFile('./tokens/tokens_eth.csv');
 
     let batchSize = 100;
-    let i = 1;
+    let i = lastStartPoint;
     do {
         await getTotalAddresses(i, batchSize);
         i += batchSize;
