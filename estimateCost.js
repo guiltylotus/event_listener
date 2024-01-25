@@ -7,15 +7,15 @@ require('dotenv').config();
 // const apiUrl = 'https://api.covalenthq.com/v1/1/tokens/0xa711BCC2b6f5c4fc3DFaCcc2a01148765CBbAb1C/token_holders_v2/';
 const apiKey = process.env.API_KEY;
 
-const pageNumber = 10000; // Set the number of pages you want to fetch
+const pageNumber = 1000000; // Set the number of pages you want to fetch
 
 const readFile = util.promisify(fs.readFile);
 const tokenData = [];
 // const failedAddress = [];
-let totalAddresses = 63826071;
-let lastStartPoint = 131959
+let totalAddresses = 231611420;
+let lastStartPoint = 382506;
 
-const failedAddressFilePath = './tokens/failed_addresses.txt';
+const failedAddressFilePath = './tokens/failed_bsc_addresses.txt';
 
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -54,15 +54,15 @@ async function getTotalAddresses(start, batchSize) {
     const requests = [];
     let end = Math.min(start+batchSize, tokenData.length);
 
-    // console.log('-----------------------');
+    console.log('-----------------------');
     // console.log('start - end', start, end)
     for (let i = start; i < end; i++) {
         if (!isValidEthAddress(tokenData[i]['address'])) {
             console.log('skip i', i)
             continue;
         }
-        const apiUrl = 'https://api.covalenthq.com/v1/1/tokens/' + tokenData[i]['address'] + '/token_holders_v2/';
-        // console.log('i :', i, tokenData[i]['symbol']);
+        const apiUrl = 'https://api.covalenthq.com/v1/56/tokens/' + tokenData[i]['address'] + '/token_holders_v2/';
+        console.log('i :', i, tokenData[i]['symbol']);
         // console.log('apiUrl :', apiUrl);
         const params = {
             'key': apiKey,
@@ -113,7 +113,7 @@ async function getTotalAddresses(start, batchSize) {
 }
 
 async function run() {
-    await readCsvFile('./tokens/tokens_eth.csv');
+    await readCsvFile('./tokens/tokens_bsc.csv');
 
     let batchSize = 50;
     let i = lastStartPoint;
